@@ -23,13 +23,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Doc, Id } from "@/convex/_generated/dataModel"
-import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Trash2Icon } from "lucide-react"
-import { ReactNode, use, useState } from "react"
+import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Star, Trash2Icon } from "lucide-react"
+import { ReactNode, useState } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import {toast} from "sonner"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu"
 
 function useFileUrl(fileId: Id<"files"> | undefined) {
   const url = useQuery(api.files.getFileUrl, fileId ? { fileId } : "skip");
@@ -69,6 +70,15 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
         <DropdownMenu>
             <DropdownMenuTrigger><MoreVertical className="h-4 w-4"/></DropdownMenuTrigger>
             <DropdownMenuContent>
+              <DropdownMenuItem 
+                    onClick={() => {
+                        
+                    }}
+                    className="flex gap-1 text-blue-600 items-center cursor-pointer"
+                >
+                    <Star/>Favourite
+                </DropdownMenuItem>
+                <DropdownMenuSeparator/>
                 <DropdownMenuItem 
                     onClick={() => {
                         setIsConfirmOpen(true)
@@ -78,6 +88,8 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
                     <Trash2Icon className="text-red-600 h-3 w-3"/>
                     Delete
                 </DropdownMenuItem>
+                
+                
             </DropdownMenuContent>
         </DropdownMenu>
         </>
