@@ -22,12 +22,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Doc } from "@/convex/_generated/dataModel"
-import { MoreVertical, Trash2Icon, TrashIcon } from "lucide-react"
-import { useState } from "react"
-import { useMutation } from "convex/react"
+import { Doc, Id } from "@/convex/_generated/dataModel"
+import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Trash2Icon } from "lucide-react"
+import { ReactNode, use, useState } from "react"
+import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import {toast} from "sonner"
+import Image from "next/image"
+import { Skeleton } from "@/components/ui/skeleton"
+
+function useFileUrl(fileId: Id<"files"> | undefined) {
+  const url = useQuery(api.files.getFileUrl, fileId ? { fileId } : "skip");
+  return url;
+}
 
 const FileCardActions = ({file}: {file: Doc<"files">}) => {
     const deleteFile = useMutation(api.files.deleteFile)
@@ -77,23 +84,62 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
     )
 }
 
-const FileCards = ({file}: {file:Doc<"files">}) => {
+const FileCards = ({ file }: { file: Doc<"files"> }) => {
+  const typeToIcons = {
+    image: <ImageIcon />,
+    pdf: <FileIcon />,
+    txt: <FileTextIcon />,
+  } as Record<Doc<"files">["type"], ReactNode>;
+
+  const url = useFileUrl(file._id);
+
   return (
     <Card>
-        <CardHeader className="relative">
-            <CardTitle>{file.name}</CardTitle>
-            <div className="absolute top-0 right-2">
-                <FileCardActions file = {file}/>
-            </div>
-        </CardHeader>
-        <CardContent>
-            <p>Card Content</p>
-        </CardContent>
-        <CardFooter className="flex gap-2 justify-center items-center">
-            <Button >Download</Button>
-        </CardFooter>
-    </Card>
-  )
-}
+      <CardHeader className="relative">
+        <CardTitle className="flex gap-2 items-center">
+          <div>{typeToIcons[file.type]}</div>
+          {file.name}
+        </CardTitle>
+        <div className="absolute top-0 right-2">
+          <FileCardActions file={file} />
+        </div>
+      </CardHeader>
 
-export default FileCards
+      <CardContent className="h-[200px] flex justify-center items-center">
+        {file.type === "image" ? (
+          url ? (
+            <Image
+              alt={file.name}
+              width={200}
+              height={100}
+              src={url}
+              unoptimized // optional, avoids Next.js optimization issues
+            />
+          ) : (
+            <Skeleton className="h-20 w-20"/>
+          )
+        ) : file.type === "txt" ? (
+          <FileTextIcon className="h-20 w-20" />
+        ) : (
+          <FileIcon className="h-20 w-20" />
+        )}
+      </CardContent>
+
+      <CardFooter className="flex justify-center items-center">
+        <Button
+          onClick={() => {
+            if (url) {
+              window.open(url, "_blank");
+            } else {
+              toast.warning("File URL is still loading.");
+            }
+          }}
+        >
+          Download
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+};
+
+export default FileCards;

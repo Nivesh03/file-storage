@@ -13,6 +13,7 @@ import { z } from "zod"
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Doc } from "@/convex/_generated/dataModel";
 
 const formSchema = z.object({
   title: z.string().min(1).max(100),
@@ -51,11 +52,17 @@ export default function Home() {
       body: values.file[0],
     });
     const { storageId } = await result.json();
+    const typeConversion = {
+      "image/png" : "image",
+      "application/pdf" : "pdf",
+      "text/plain": "txt",
+    } as Record<string, Doc<"files">["type"]>
     try {
       await createFile({
         name: values.title,
         fileId: storageId,
         orgId,
+        type: typeConversion[values.file[0].type]
     })
 
     toast.success("File Upload Succesful", {

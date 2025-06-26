@@ -4,6 +4,8 @@ import { useOrganization, useUser } from "@clerk/clerk-react";
 import { useQuery } from "convex/react";
 import UploadButton from "./components/UploadButton";
 import FileCards from "./components/FileCards";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const organization = useOrganization()
@@ -18,21 +20,50 @@ export default function Home() {
     orgId ? {orgId} : "skip"
   )
 
+  const isLoading = files === undefined
   return (
     <main className="container mx-auto pt-12">
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold">Your Files</h1>
-        <UploadButton />
-      </div>
-      
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {
-        files?.map((file) => {
-          return <FileCards key={file._id} file={file}/>
-        })
+      {
+        isLoading && (
+          <div className="flex flex-col gap-8 w-full items-center mt-24">
+            <Loader2 className="h-32 w-32 animate-spin text-gray-600" />
+            <div className="text-2xl text-gray-600">Loading your files</div>
+          </div>
+        )
       }
-      </div>
 
+      {
+          !isLoading && files.length === 0 && (
+          <div className="flex flex-col gap-6 w-full items-center mt-12">
+          <Image 
+            src="/empty.svg" 
+            alt="an image of image directory"
+            height={300}
+            width={300}
+          />
+          <div className="text-2xl">Nothing to see here. Start uploading!</div>
+          <UploadButton />
+          </div>
+          )
+      }
+
+      {
+        !isLoading && files.length > 0 && (
+          <div>
+            <div className="flex justify-between items-center">
+            <h1 className="text-4xl font-bold">Your Files</h1>
+            <UploadButton />
+          </div>
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {
+            files?.map((file) => {
+              return <FileCards key={file._id} file={file}/>
+            })}
+          
+            </div>
+          </div>
+        )
+      }
     </main>
   );
 }
