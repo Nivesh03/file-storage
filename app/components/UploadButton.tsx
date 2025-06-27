@@ -37,7 +37,16 @@ export default function Home() {
   if (organization.isLoaded && user.isLoaded) {
     orgId = organization.organization?.id ?? user.user?.id
   }
-  
+    function convertMimeToFileType(mime: string): Doc<"files">["type"] {
+      if (mime.startsWith("image/")) return "image";
+      
+      const typeConversion: Record<string, Doc<"files">["type"]> = {
+        "application/pdf": "pdf",
+        "text/plain": "txt",
+      };
+
+      return typeConversion[mime];
+    }
   const fileRef = form.register("file")
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -52,17 +61,13 @@ export default function Home() {
       body: values.file[0],
     });
     const { storageId } = await result.json();
-    const typeConversion = {
-      "image/png" : "image",
-      "application/pdf" : "pdf",
-      "text/plain": "txt",
-    } as Record<string, Doc<"files">["type"]>
+
     try {
       await createFile({
         name: values.title,
         fileId: storageId,
         orgId,
-        type: typeConversion[values.file[0].type]
+        type: convertMimeToFileType(values.file[0].type)
     })
 
     toast.success("File Upload Succesful", {

@@ -1,10 +1,14 @@
+"use client"
+
 import FileBrowser from '@/app/components/FileBrowser'
-import React from 'react'
+import { api } from '@/convex/_generated/api'
+import { useQuery } from 'convex/react'
 
 const FavouritesPage = () => {
+
   return (
     <div>
-      <FileBrowser title="Favourites"/>
+      <FileBrowser title="Favourites" favourites/>
     </div>
   )
 }

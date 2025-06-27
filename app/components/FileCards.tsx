@@ -39,6 +39,7 @@ function useFileUrl(fileId: Id<"files"> | undefined) {
 
 const FileCardActions = ({file}: {file: Doc<"files">}) => {
     const deleteFile = useMutation(api.files.deleteFile)
+    const toggleFavourite = useMutation(api.files.toggleFavourite)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     return (
         <>
@@ -72,7 +73,9 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
             <DropdownMenuContent>
               <DropdownMenuItem 
                     onClick={() => {
-                        
+                        toggleFavourite({
+                          fileId: file._id
+                        })
                     }}
                     className="flex gap-1 text-blue-600 items-center cursor-pointer"
                 >
