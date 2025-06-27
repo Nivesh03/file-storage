@@ -4,13 +4,14 @@ import { useOrganization, useUser } from "@clerk/clerk-react";
 import { useQuery } from "convex/react";
 import FileCards from "@/app/components/FileCards";
 import Image from "next/image";
-import { FileIcon, Loader2, Star } from "lucide-react";
+import { Grid, Loader2, Table2 } from "lucide-react";
 import SearchBar from "@/app/components/SearchBar";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import UploadButton from "@/app/components/UploadButton";
-
+import { DataTable } from "./FileTable";
+import { columns } from "./Columns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton";
 function Placeholder() {
   
     return (
@@ -52,35 +53,53 @@ export default function FileBrowser({
 
   const isLoading = files === undefined
 
-  return (
-    <main className="container mx-5 ">
-        {
-          isLoading && (
-            <div className="flex flex-col gap-8 w-full items-center mt-24">
-              <Loader2 className="h-32 w-32 animate-spin text-gray-600" />
-              <div className="text-2xl text-gray-600">Loading your files</div>
-            </div>
-          )
-        }
+  const modifiedFile = files?.map((file) => ({
+    ...file,
+    isFavourited: (
+      (favourites ?? []).some(
+        (favourite) => favourite.fileId === file._id
+      )
+    )
+  })) ?? []
 
-        {
-          !isLoading && (
+  return (
+    <main className="container mx-5 ">  
+      <div>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">{title}</h1>
+          <SearchBar query = {query} setQuery = {setQuery}/>
+          <UploadButton />
+        </div>
+        <Tabs defaultValue="grid">
+          <TabsList className="w-[400px]">
+            <TabsTrigger value="grid"><Grid/>   Grid</TabsTrigger>
+            <TabsTrigger value="table"><Table2/>  Table</TabsTrigger>
+          </TabsList>
+          {
+            isLoading && (
             <div>
-              <div className="flex justify-between items-center mb-8">
-                <h1 className="text-4xl font-bold">{title}</h1>
-                <SearchBar query = {query} setQuery = {setQuery}/>
-                <UploadButton />
-              </div>
-              {files && files.length === 0 && <Placeholder/>}
-              <div className="grid grid-cols-3 gap-4">
-                {
-                files?.map((file) => {
-                  return <FileCards favourites={favourites ?? []} key={file._id} file={file}/>
-                })}
+              <div className="grid grid-cols-3 gap-4 w-full">
+                <Skeleton className="w-50 h-50" />
+                <Skeleton className="w-50 h-50"/>
+                <Skeleton className="w-50 h-50"/>
               </div>
             </div>
-          )
-        }
+            )
+          }
+          <TabsContent value="grid">
+          <div className="grid grid-cols-3 gap-4">
+          {
+          modifiedFile?.map((file) => {
+            return <FileCards  key={file._id} file={file}/>
+          })}
+        </div>
+          </TabsContent>
+          <TabsContent value="table"><DataTable columns={columns} data={modifiedFile} /></TabsContent>
+        </Tabs>
+        {files && files.length === 0 && <Placeholder/>}
+        
+
+      </div>
     </main>
   );
 }
