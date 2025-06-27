@@ -28,7 +28,10 @@ function Placeholder() {
     
 }
 
-export default function FileBrowser({title, favouritesOnly}: {title: string, favouritesOnly?: boolean}) {
+export default function FileBrowser({
+  title, favouritesOnly, deletedOnly}: 
+  {title: string, favouritesOnly?: boolean, deletedOnly?: boolean
+  }) {
   const organization = useOrganization()
 
   const user = useUser()
@@ -44,7 +47,7 @@ export default function FileBrowser({title, favouritesOnly}: {title: string, fav
   )
   const files = useQuery(
     api.files.getFiles, 
-    orgId ? {orgId, query, favourites: favouritesOnly} : "skip"
+    orgId ? {orgId, query, favourites: favouritesOnly, deleted: deletedOnly} : "skip"
   )
 
   const isLoading = files === undefined

@@ -38,6 +38,15 @@ http.route({
         case "user.created":
           await ctx.runMutation(internal.users.createUser, {
             tokenIdentifier: `${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL}|${result.data.id}`,
+            name: `${result.data.first_name ?? ""} ${result.data.last_name ?? ""}` ,
+            image: result.data.image_url
+          });
+          break;
+        case "user.updated":
+          await ctx.runMutation(internal.users.updateUser, {
+            tokenIdentifier: `${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL}|${result.data.id}`,
+            name: `${result.data.first_name ?? ""} ${result.data.last_name ?? ""}` ,
+            image: result.data.image_url
           });
           break;
 

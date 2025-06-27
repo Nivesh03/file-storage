@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button"
+import { format, formatDistance, formatRelative, subDays } from 'date-fns'
 import {
   Card,
   CardContent,
@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Doc, Id } from "@/convex/_generated/dataModel"
-import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Star, StarsIcon, Trash2Icon } from "lucide-react"
+import { Download, FileIcon, FileTextIcon, ImageIcon, MoreVertical, Star, StarsIcon, Trash2Icon, Undo2Icon } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
@@ -32,6 +32,7 @@ import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu"
 import { Protect } from "@clerk/nextjs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 function useFileUrl(fileId: Id<"files"> | undefined) {
   const url = useQuery(api.files.getFileUrl, fileId ? { fileId } : "skip");
@@ -40,7 +41,9 @@ function useFileUrl(fileId: Id<"files"> | undefined) {
 
 const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited: boolean}) => {
     const deleteFile = useMutation(api.files.deleteFile)
+    const restoreFile = useMutation(api.files.restoreFile)
     const toggleFavourite = useMutation(api.files.toggleFavourite)
+  const url = useFileUrl(file._id)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     return (
         <>
@@ -49,7 +52,7 @@ const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited
                 <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the file.
+                    Files will be moved to Trash. Trashed files are deleted in 1 day.
                 </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -59,9 +62,13 @@ const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited
                         await deleteFile({
                             fileId: file._id
                         })
-                        toast.success("File deleted successfully.")
+                        toast.success("File moved to trash.",
+                          {
+                            description: "File will be deleted in 10 days"
+                          }
+                        )
                     } catch (error) {
-                        toast.error("Deletion failed. Try again later.")
+                        toast.error("Moving to trash failed. Try again later.")
                     }
                     
                     
@@ -69,9 +76,11 @@ const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
         <DropdownMenu>
             <DropdownMenuTrigger><MoreVertical className="h-4 w-4"/></DropdownMenuTrigger>
             <DropdownMenuContent>
+
               <DropdownMenuItem 
                     onClick={() => {
                         toggleFavourite({
@@ -80,25 +89,62 @@ const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited
                     }}
                     className="flex gap-2 items-center cursor-pointer hover:font-bold"
                 >
-                    {isFavourited ? <div className="flex items-center gap-2"><Star/>Unfavourite</div> : <div className="flex items-center gap-2"><StarsIcon/>Favourite</div>}
+                    {
+                    isFavourited ? 
+                    <div className="flex items-center gap-2"><Star/>Unfavourite</div> : 
+                    <div className="flex items-center gap-2"><StarsIcon/>Favourite</div>}
                     
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator/>
+
+                <DropdownMenuItem 
+                    onClick={() => {
+                    
+                    if (url) {
+                      window.open(url, "_blank");
+                    } else {
+                      toast.warning("File URL is still loading.");
+                    }
+                  }}
+                    className="flex gap-2 items-center cursor-pointer hover:font-bold"
+                >
+                    <Download/>Download
+                    
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator/>
+
                 <Protect
-                      role="org:admin"
-                      fallback={<></>}
+                  role="org:admin"
+                  fallback={<></>}
                 >
                     <DropdownMenuItem 
-                        onClick={() => {
-                            setIsConfirmOpen(true)
+                        onClick={async () => {
+                            try {
+                              if (file.shouldDelete) {
+                                await restoreFile({
+                                  fileId: file._id,
+                                })
+                                toast.success("File restored successfully .")
+                              } else {
+                                setIsConfirmOpen(true)
+                              }
+                              
+                            } catch (error) {
+                              toast.error("Restoring file from trash failed. Try again later.")
+                            }
                         }}
-                        className="flex gap-2 text-red-600 items-center cursor-pointer hover:font-bold"
-                    >
-                        <Trash2Icon className="text-red-600 h-3 w-3 hover:black"/>
-                        Delete
+                        className="cursor-pointer hover:font-bold"
+                    >   
+                        { 
+                        file.shouldDelete ? 
+                        <div className="flex gap-2 text-green-600 items-center "><Undo2Icon/>Restore</div> :
+                        <div className="flex gap-2 text-red-600 items-center "><Trash2Icon/>Trash</div>
+                        }
+                        
                     </DropdownMenuItem>
                 </Protect>
-                
             </DropdownMenuContent>
         </DropdownMenu>
         </>
@@ -111,14 +157,16 @@ const FileCards = ({ file, favourites }: { file: Doc<"files">, favourites:Doc<"f
     pdf: <FileIcon />,
     txt: <FileTextIcon />,
   } as Record<Doc<"files">["type"], ReactNode>;
-  
+  const userProfile = useQuery(api.users.getUserProfile, {
+    userId: file.userId,
+  })
   const url = useFileUrl(file._id);
   const isFavourited = favourites.some(favourite => favourite.fileId === file._id)
   
   return (
     <Card>
       <CardHeader className="relative">
-        <CardTitle className="flex gap-2 items-center">
+        <CardTitle className="flex gap-2 items-center text-base ">
           <div>{typeToIcons[file.type]}</div>
           {file.name}
         </CardTitle>
@@ -147,18 +195,18 @@ const FileCards = ({ file, favourites }: { file: Doc<"files">, favourites:Doc<"f
         )}
       </CardContent>
 
-      <CardFooter className="flex justify-center items-center">
-        <Button
-          onClick={() => {
-            if (url) {
-              window.open(url, "_blank");
-            } else {
-              toast.warning("File URL is still loading.");
-            }
-          }}
-        >
-          Download
-        </Button>
+      <CardFooter className="flex items-center justify-evenly">
+        <div className="flex justify-center items-center gap-1 text-xs w-40">
+          <Avatar className="h-6 w-6" >
+            <AvatarImage src={userProfile?.image} />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+          <div>{userProfile?.name}</div>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-xs w-40">
+          <div className='font-bold'>Created on:</div>
+          <div className='capitalize'>{formatRelative(new Date(file._creationTime), new Date())}</div>
+        </div>
       </CardFooter>
     </Card>
   );
