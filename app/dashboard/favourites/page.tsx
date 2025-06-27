@@ -8,7 +8,7 @@ const FavouritesPage = () => {
 
   return (
     <div>
-      <FileBrowser title="Favourites" favourites/>
+      <FileBrowser title="Favourites" favouritesOnly/>
     </div>
   )
 }

@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Doc, Id } from "@/convex/_generated/dataModel"
-import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Star, Trash2Icon } from "lucide-react"
+import { FileIcon, FileTextIcon, ImageIcon, MoreVertical, Star, StarsIcon, Trash2Icon } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
@@ -37,7 +37,7 @@ function useFileUrl(fileId: Id<"files"> | undefined) {
   return url;
 }
 
-const FileCardActions = ({file}: {file: Doc<"files">}) => {
+const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited: boolean}) => {
     const deleteFile = useMutation(api.files.deleteFile)
     const toggleFavourite = useMutation(api.files.toggleFavourite)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -77,18 +77,19 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
                           fileId: file._id
                         })
                     }}
-                    className="flex gap-1 text-blue-600 items-center cursor-pointer"
+                    className="flex gap-2 items-center cursor-pointer hover:font-bold"
                 >
-                    <Star/>Favourite
+                    {isFavourited ? <div className="flex items-center gap-2"><Star/>Unfavourite</div> : <div className="flex items-center gap-2"><StarsIcon/>Favourite</div>}
+                    
                 </DropdownMenuItem>
                 <DropdownMenuSeparator/>
                 <DropdownMenuItem 
                     onClick={() => {
                         setIsConfirmOpen(true)
                     }}
-                    className="flex gap-1 text-red-600 items-center cursor-pointer"
+                    className="flex gap-2 text-red-600 items-center cursor-pointer hover:font-bold"
                 >
-                    <Trash2Icon className="text-red-600 h-3 w-3"/>
+                    <Trash2Icon className="text-red-600 h-3 w-3 hover:black"/>
                     Delete
                 </DropdownMenuItem>
                 
@@ -99,7 +100,7 @@ const FileCardActions = ({file}: {file: Doc<"files">}) => {
     )
 }
 
-const FileCards = ({ file }: { file: Doc<"files"> }) => {
+const FileCards = ({ file, favourites }: { file: Doc<"files">, favourites:Doc<"favourites">[] }) => {
   const typeToIcons = {
     image: <ImageIcon />,
     pdf: <FileIcon />,
@@ -107,7 +108,8 @@ const FileCards = ({ file }: { file: Doc<"files"> }) => {
   } as Record<Doc<"files">["type"], ReactNode>;
 
   const url = useFileUrl(file._id);
-
+  const isFavourited = favourites.some(favourite => favourite.fileId === file._id)
+  
   return (
     <Card>
       <CardHeader className="relative">
@@ -116,7 +118,7 @@ const FileCards = ({ file }: { file: Doc<"files"> }) => {
           {file.name}
         </CardTitle>
         <div className="absolute top-0 right-2">
-          <FileCardActions file={file} />
+          <FileCardActions isFavourited={isFavourited} file={file} />
         </div>
       </CardHeader>
 

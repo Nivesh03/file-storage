@@ -28,8 +28,9 @@ function Placeholder() {
     
 }
 
-export default function FileBrowser({title, favourites}: {title: string, favourites?: boolean}) {
+export default function FileBrowser({title, favouritesOnly}: {title: string, favouritesOnly?: boolean}) {
   const organization = useOrganization()
+
   const user = useUser()
   const [query, setQuery] = useState("")
 
@@ -37,16 +38,19 @@ export default function FileBrowser({title, favourites}: {title: string, favouri
   if (organization.isLoaded && user.isLoaded) {
     orgId = organization.organization?.id ?? user.user?.id
   }
-  
+  const favourites = useQuery(
+    api.files.getAllFavourites, 
+    orgId ? {orgId} : "skip"
+  )
   const files = useQuery(
     api.files.getFiles, 
-    orgId ? {orgId, query, favourites} : "skip"
+    orgId ? {orgId, query, favourites: favouritesOnly} : "skip"
   )
 
   const isLoading = files === undefined
 
   return (
-    <main className="container mx-5 pt-12">
+    <main className="container mx-5 ">
         {
           isLoading && (
             <div className="flex flex-col gap-8 w-full items-center mt-24">
@@ -68,7 +72,7 @@ export default function FileBrowser({title, favourites}: {title: string, favouri
               <div className="grid grid-cols-3 gap-4">
                 {
                 files?.map((file) => {
-                  return <FileCards key={file._id} file={file}/>
+                  return <FileCards favourites={favourites ?? []} key={file._id} file={file}/>
                 })}
               </div>
             </div>
