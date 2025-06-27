@@ -31,6 +31,7 @@ import {toast} from "sonner"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu"
+import { Protect } from "@clerk/nextjs"
 
 function useFileUrl(fileId: Id<"files"> | undefined) {
   const url = useQuery(api.files.getFileUrl, fileId ? { fileId } : "skip");
@@ -83,16 +84,20 @@ const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFavourited
                     
                 </DropdownMenuItem>
                 <DropdownMenuSeparator/>
-                <DropdownMenuItem 
-                    onClick={() => {
-                        setIsConfirmOpen(true)
-                    }}
-                    className="flex gap-2 text-red-600 items-center cursor-pointer hover:font-bold"
+                <Protect
+                      role="org:admin"
+                      fallback={<></>}
                 >
-                    <Trash2Icon className="text-red-600 h-3 w-3 hover:black"/>
-                    Delete
-                </DropdownMenuItem>
-                
+                    <DropdownMenuItem 
+                        onClick={() => {
+                            setIsConfirmOpen(true)
+                        }}
+                        className="flex gap-2 text-red-600 items-center cursor-pointer hover:font-bold"
+                    >
+                        <Trash2Icon className="text-red-600 h-3 w-3 hover:black"/>
+                        Delete
+                    </DropdownMenuItem>
+                </Protect>
                 
             </DropdownMenuContent>
         </DropdownMenu>
@@ -106,7 +111,7 @@ const FileCards = ({ file, favourites }: { file: Doc<"files">, favourites:Doc<"f
     pdf: <FileIcon />,
     txt: <FileTextIcon />,
   } as Record<Doc<"files">["type"], ReactNode>;
-
+  
   const url = useFileUrl(file._id);
   const isFavourited = favourites.some(favourite => favourite.fileId === file._id)
   

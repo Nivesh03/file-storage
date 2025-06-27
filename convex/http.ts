@@ -2,8 +2,19 @@ import { httpRouter } from "convex/server";
 
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
 
+const getRole = (role: string) => {
+  switch(role) {
+    case "org:admin":
+      return "admin"
+    case "org:guest_member":
+      return "guest_member"
+    case "org:basic_member":
+      return "basic_member"
+    default:
+      return "basic_member"
+  }
+}
 const http = httpRouter();
 
 http.route({
@@ -33,7 +44,14 @@ http.route({
         case "organizationMembership.created":
           await ctx.runMutation(internal.users.addOrgIdToUser, {
             tokenIdentifier: `${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL}|${result.data.public_user_data.user_id}`,
-            orgId: result.data.organization.id
+            orgId: result.data.organization.id,
+            role: getRole(result.data.role),
+          });
+        case "organizationMembership.updated":
+          await ctx.runMutation(internal.users.updateRoleInOrgForUser, {
+            tokenIdentifier: `${process.env.NEXT_PUBLIC_CLERK_FRONTEND_API_URL}|${result.data.public_user_data.user_id}`,
+            orgId: result.data.organization.id,
+            role: getRole(result.data.role),
           });
       }
 

@@ -12,13 +12,16 @@ async function hasAccessToOrg(ctx: QueryCtx | MutationCtx, orgId: string) {
     const user = await ctx.db.query("users").withIndex("by_tokenIdentifier", 
         q => q.eq("tokenIdentifier", identity.tokenIdentifier)
     ).first()
+
     if (!user) {
         return null
     }
-    const hasAccess = user.orgIds.includes(orgId)  || user.tokenIdentifier.includes(orgId)
+
+    const hasAccess = user.orgIds.some((item) => item.orgId === orgId)  || user.tokenIdentifier.includes(orgId)
     if (!hasAccess) {
         return null
     }
+
     return { user }
 }
 
@@ -43,26 +46,13 @@ export const getFileUrl = query({
     fileId: v.id("files"),
   },
   async handler(ctx, args) {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("You must be logged in");
-    }
 
-    const file = await ctx.db.get(args.fileId);
-    if (!file) {
-      throw new ConvexError("File not found");
-    }
-
-    const user = await getUser(ctx, identity.tokenIdentifier);
-    const hasAccess =
-      user.orgIds.includes(file.orgId) ||
-      identity.tokenIdentifier.includes(file.orgId);
-
+    const hasAccess = await hasAccesToFile(ctx, args.fileId)
     if (!hasAccess) {
-      throw new ConvexError("Unauthorized to access this file");
+        return null
     }
 
-    const url = await ctx.storage.getUrl(file.fileId); // file.fileId is Id<"_storage">
+    const url = await ctx.storage.getUrl(hasAccess.file.fileId); // file.fileId is Id<"_storage">
     return url;
   },
 });
@@ -197,6 +187,12 @@ export const deleteFile = mutation({
 
         if (!access) {
             throw new ConvexError("No access to file")
+        }
+
+        const isAdmin = access.user.orgIds.find((org) => org.orgId === access.file.orgId)?.role === "admin"
+
+        if (!isAdmin) {
+            throw new ConvexError("Access to file denied. You are not an admin")
         }
 
         await ctx.db.delete(args.fileId)
