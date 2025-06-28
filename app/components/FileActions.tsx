@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +15,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
 import { Doc } from "@/convex/_generated/dataModel"
 import { Download, MoreVertical, Star, StarsIcon, Trash2Icon, Undo2Icon } from "lucide-react"
 import { useState } from "react"
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import {toast} from "sonner"
 import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu"
@@ -29,7 +31,8 @@ export const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFav
     const deleteFile = useMutation(api.files.deleteFile)
     const restoreFile = useMutation(api.files.restoreFile)
     const toggleFavourite = useMutation(api.files.toggleFavourite)
-  const url = useFileUrl(file._id)
+    const me = useQuery(api.users.getMe)
+    const url = useFileUrl(file._id)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     return (
         <>
@@ -102,7 +105,13 @@ export const FileCardActions = ({file, isFavourited}: {file: Doc<"files">, isFav
                 <DropdownMenuSeparator/>
 
                 <Protect
-                  role="org:admin"
+                  condition={(check) => {
+                    return (
+                        check({
+                        role: "org:admin",
+                        }) || file.userId === me?._id
+                    );
+                    }}
                   fallback={<></>}
                 >
                     <DropdownMenuItem 

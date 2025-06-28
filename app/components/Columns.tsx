@@ -28,7 +28,7 @@ export const columns: ColumnDef<Doc<"files"> & { isFavourited: boolean}>[] = [
         })
     return (
         <div>
-        <div className="flex justify-center items-center gap-1 text-xs w-40">
+        <div className="flex  items-center gap-1 text-xs w-40">
           <Avatar className="h-6 w-6" >
             <AvatarImage src={userProfile?.image} />
             <AvatarFallback>CN</AvatarFallback>

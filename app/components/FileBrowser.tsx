@@ -4,7 +4,7 @@ import { useOrganization, useUser } from "@clerk/clerk-react";
 import { useQuery } from "convex/react";
 import FileCards from "@/app/components/FileCards";
 import Image from "next/image";
-import { Grid, Loader2, Table2 } from "lucide-react";
+import { Grid, Table2 } from "lucide-react";
 import SearchBar from "@/app/components/SearchBar";
 import { useState } from "react";
 import UploadButton from "@/app/components/UploadButton";
@@ -12,6 +12,15 @@ import { DataTable } from "./FileTable";
 import { columns } from "./Columns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Doc } from "@/convex/_generated/dataModel";
+
 function Placeholder() {
   
     return (
@@ -37,6 +46,7 @@ export default function FileBrowser({
 
   const user = useUser()
   const [query, setQuery] = useState("")
+  const [type, setType] = useState<Doc<"files">["type"] | "all">("all")
 
   let orgId: string | undefined = undefined
   if (organization.isLoaded && user.isLoaded) {
@@ -48,7 +58,7 @@ export default function FileBrowser({
   )
   const files = useQuery(
     api.files.getFiles, 
-    orgId ? {orgId, query, favourites: favouritesOnly, deleted: deletedOnly} : "skip"
+    orgId ? {orgId,type: type === "all" ? undefined : type, query, favourites: favouritesOnly, deleted: deletedOnly} : "skip"
   )
 
   const isLoading = files === undefined
@@ -63,7 +73,6 @@ export default function FileBrowser({
   })) ?? []
 
   return (
-    <main className="container mx-5 ">  
       <div>
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">{title}</h1>
@@ -71,10 +80,27 @@ export default function FileBrowser({
           <UploadButton />
         </div>
         <Tabs defaultValue="grid">
-          <TabsList className="w-[400px]">
-            <TabsTrigger value="grid"><Grid/>   Grid</TabsTrigger>
-            <TabsTrigger value="table"><Table2/>  Table</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-between items-center">
+            <TabsList className="w-[400px]">
+              <TabsTrigger value="grid"><Grid/>   Grid</TabsTrigger>
+              <TabsTrigger value="table"><Table2/>  Table</TabsTrigger>
+            </TabsList>
+            <div className="flex gap-2 items-center">
+              <Select value={type} onValueChange={(newType) => {
+                setType(newType as any)
+              }}>
+                <SelectTrigger id="type-filter" className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Files</SelectItem>
+                  <SelectItem value="image">Image</SelectItem>
+                  <SelectItem value="pdf">Pdf</SelectItem>
+                  <SelectItem value="txt">Text</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           {
             isLoading && (
             <div>
@@ -100,6 +126,5 @@ export default function FileBrowser({
         
 
       </div>
-    </main>
   );
 }
