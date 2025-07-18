@@ -5,7 +5,7 @@ const crons = cronJobs();
 
 crons.interval(
   "clear trash table",
-  { minutes: 10 },
+  { hours: 48 },
   internal.files.clearTrash,
 );
 
